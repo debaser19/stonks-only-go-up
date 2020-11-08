@@ -1,0 +1,8 @@
+/driver
+/venv
+/.idea
+/__pycache__
+*.db
+*.log
+example.py
+creds.py
