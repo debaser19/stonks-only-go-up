@@ -1,8 +1,8 @@
-/driver
-/venv
-/.idea
-/__pycache__
-*.db
-*.log
-example.py
-creds.py
+__pycache__/
+Include/
+Lib/
+Scripts/
+chromedriver.exe
+config.py
+pyvenv.cfg
+token

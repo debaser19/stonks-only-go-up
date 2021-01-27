@@ -1,20 +1,39 @@
-import sqlite3
-import datetime
-import time
-from flask import Flask
+from tda import auth, client
 from flask import render_template
+# import Flask
+import json
+import config
 
 
-app = Flask(__name__)
+api_key = config.api_key
+token_path = config.token_path
+redirect_uri = config.redirect_uri
 
 
-@app.route("/simple_chart")
-def chart():
-    legend = 'Monthly Data'
-    labels = ["January", "February", "March", "April", "May", "June", "July", "August"]
-    values = [10, 9, 8, 7, 6, 4, 7, 8]
-    return render_template('chart.html', values=values, labels=labels, legend=legend)
+def connectToApi():
+    # generate token
+    try:
+        c = auth.client_from_token_file(token_path, api_key)
+        return c
+    except FileNotFoundError:
+        from selenium import webdriver
+        with webdriver.Chrome() as driver:
+            c = auth.client_from_login_flow(
+                driver, api_key, redirect_uri, token_path)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+
+def getAccountInfo():
+    c = connectToApi()
+    r = c.get_account('455720137', fields=c.Account.Fields.POSITIONS)
+    account_info = r.json()
+
+    return account_info
+
+
+def getNetLiq():
+    return getAccountInfo()['securitiesAccount']['initialBalances']['liquidationValue']
+
+
+if __name__ == '__main__':
+    print(json.dumps(getAccountInfo(), indent=4))
