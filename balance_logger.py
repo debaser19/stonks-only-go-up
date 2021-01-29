@@ -56,7 +56,7 @@ if __name__ == '__main__':
         }
     ]
     
-    client = InfluxDBClient('localhost', 8086, influxdb_user, influxdb_pass, 'balance_history')
+    client = InfluxDBClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
     client.create_database('balance_history')
     client.write_points(json_body)
 
