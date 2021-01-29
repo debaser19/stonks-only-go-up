@@ -6,3 +6,4 @@ chromedriver.exe
 config.py
 pyvenv.cfg
 token
+.vscode/settings.json
