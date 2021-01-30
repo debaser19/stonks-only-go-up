@@ -11,4 +11,4 @@ pyvenv.cfg
 token
 .vscode/settings.json
 lib64
-
+etc/jupyter/nbconfig/notebook.d/plotlywidget.json
