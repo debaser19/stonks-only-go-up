@@ -20,8 +20,12 @@ import emoji
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+current_balance = 0
 
 app.layout = html.Div([
+    html.H1(
+        id = 'balance-h1',
+        children = f'Current Balance: {current_balance}'),
     dcc.RadioItems(
         options = [
             {'label': '1D', 'value': '1d'},
@@ -29,8 +33,7 @@ app.layout = html.Div([
             {'label': '30D', 'value': '30d'},
             {'label': '3M', 'value': '90d'},
             {'label': '6M', 'value': '180d'},
-            {'label': '1Y', 'value': '365d'},
-            {'label': 'ALL', 'value': 'all'}
+            {'label': '1Y', 'value': '365d'}
         ],
         id = 'timeframe',
         value = '1d',
@@ -43,6 +46,21 @@ app.layout = html.Div([
         n_intervals = 0
     )
 ])
+
+
+# update balance callback
+@app.callback(
+    Output('balance-h1', 'children'),
+    [Input('my-interval', 'n_intervals')]
+)
+def updateBalance(num):
+    client = DataFrameClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
+    query = 'select last(value) as value from balance'
+    results = client.query(query)
+    df = results['balance']
+    current_balance = df['value'].iloc[-1]
+
+    return html.H1(id = 'balance-h1', children = f'Current balance: {current_balance}')
 
 
 # callback for updating on interval
@@ -73,15 +91,11 @@ def updateGraph(num, timeframe):
     results = client.query(query)
     df = results['balance']
     df['timestamp'] = df.index
-    eastern = pytz.timezone('US/Eastern')
-    df['timestamp'] = df['timestamp'].tz_convert(eastern)
-
-    # TODO: Need to fix the auto updating. It seems to updat ethe line data, but not the axis data
 
     data =[
         go.Scatter(
             y = df.value,
-            x = df.timestamp.tz_convert(eastern),
+            x = df.timestamp.tz_convert('US/Eastern'),
             mode = 'lines'
         )
     ]
@@ -91,8 +105,7 @@ def updateGraph(num, timeframe):
     )
     fig = go.Figure(data=data, layout=layout)
 
-    # print(client.query('select last("value") as value from balance'))
-    # print(df)
+    fig.update_xaxes(tickformat = '%I:%M %p\n%x')
 
     return fig
 
