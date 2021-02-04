@@ -31,10 +31,15 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 current_balance = 0
 
 app.layout = html.Div([
-    html.H1(
-        id = 'balance-h1',
-        # TODO: Need to pull in other balance info such as margin and cash values
-        children = f'Current Balance: {current_balance}'),
+    dash_table.DataTable(
+        id = 'balance_table',
+        columns = [
+            {'name': 'Net Liquidity', 'id': 'net_liq'},
+            {'name': 'Cash', 'id': 'cash'},
+            {'name': 'Buying Power', 'id': 'buying_power'},
+            {'name': 'Margin Balance', 'id': 'margin_balance'}
+        ]
+    ),
     dcc.RadioItems(
         options = [
             {'label': '1D', 'value': '1d'},
@@ -63,6 +68,42 @@ app.layout = html.Div([
             {'name': 'P/L Day', 'id': 'pl_day'},
             {'name': 'P/L Day %', 'id': 'pl_day_percent'},
             {'name': 'P/L Open', 'id': 'pl_open'}
+        ],
+        style_data_conditional = [
+            {
+                'if': { # positive p/l day
+                    'filter_query': '{pl_day} > 0',
+                    'column_id': ['pl_day', 'pl_day_percent']
+
+                },
+                'backgroundColor': 'royalblue',
+                'color': 'white'
+            },
+            {
+                'if': { # negative p/l day
+                    'filter_query': '{pl_day} < 0',
+                    'column_id': ['pl_day', 'pl_day_percent']
+                },
+                'backgroundColor': 'red',
+                'color': 'white'
+            },
+            {
+                'if': { # positive p/l open
+                    'filter_query': '{pl_open} > 0',
+                    'column_id': ['pl_open']
+
+                },
+                'backgroundColor': 'royalblue',
+                'color': 'white'
+            },
+            {
+                'if': { # negative p/l open
+                    'filter_query': '{pl_open} < 0',
+                    'column_id': ['pl_open']
+                },
+                'backgroundColor': 'red',
+                'color': 'white'
+            }
         ]
     ),
     html.H3('Options'),
@@ -78,6 +119,42 @@ app.layout = html.Div([
             {'name': 'P/L Day', 'id': 'pl_day'},
             {'name': 'P/L Day %', 'id': 'pl_day_percent'},
             {'name': 'P/L Open', 'id': 'pl_open'}
+        ],
+        style_data_conditional = [
+            {
+                'if': { # positive p/l day
+                    'filter_query': '{pl_day} > 0',
+                    'column_id': ['pl_day', 'pl_day_percent']
+
+                },
+                'backgroundColor': 'royalblue',
+                'color': 'white'
+            },
+            {
+                'if': { # negative p/l day
+                    'filter_query': '{pl_day} < 0',
+                    'column_id': ['pl_day', 'pl_day_percent']
+                },
+                'backgroundColor': 'red',
+                'color': 'white'
+            },
+            {
+                'if': { # positive p/l open
+                    'filter_query': '{pl_open} > 0',
+                    'column_id': ['pl_open']
+
+                },
+                'backgroundColor': 'royalblue',
+                'color': 'white'
+            },
+            {
+                'if': { # negative p/l open
+                    'filter_query': '{pl_open} < 0',
+                    'column_id': ['pl_open']
+                },
+                'backgroundColor': 'red',
+                'color': 'white'
+            }
         ]
     ),
     dcc.Interval(
@@ -90,18 +167,11 @@ app.layout = html.Div([
 
 # Update balance on interval
 @app.callback(
-    Output('balance-h1', 'children'),
+    Output('balance_table', 'data'),
     [Input('my-interval', 'n_intervals')]
 )
 def updateBalance(num):
-    client = DataFrameClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
-    query = 'select last(value) as value from balance'
-    results = client.query(query)
-    df = results['balance']
-    current_balance = df['value'].iloc[-1]
-
-    return html.H1(id = 'balance-h1', children = f'Current balance: {current_balance}')
-
+    return [getBalances()]
 
 # Update graph on interval
 @app.callback(
@@ -141,11 +211,18 @@ def updateGraph(num, timeframe):
     ]
 
     layout = go.Layout(
-        title = emoji.emojize('AMC ded? :(')
+        title = emoji.emojize('AMC ded? :('),
+        uirevision = data
     )
     fig = go.Figure(data=data, layout=layout)
 
-    fig.update_xaxes(tickformat = '%I:%M %p\n%x')
+    fig.update_xaxes(
+        tickformat = '%I:%M %p\n%x',
+        rangebreaks = [
+            dict(bounds = ['sat', 'mon']),
+            dict(bounds = [20, 4], pattern = 'hour')
+        ]
+    )
 
     return fig
 
@@ -158,7 +235,6 @@ def updateGraph(num, timeframe):
 def updateStockPositions(num):
     stock_positions = getPositions()[0]
     df = pd.DataFrame(stock_positions)
-    print(df.to_dict('data'))
 
     return df.to_dict('records')
 
@@ -171,7 +247,6 @@ def updateStockPositions(num):
 def updateOptionPositionss(num):
     options_positions = getPositions()[1]
     df = pd.DataFrame(options_positions)
-    print(df.to_dict('data'))
 
     return df.to_dict('records')
 
@@ -201,10 +276,14 @@ def getPositions():
     stock_positions = []
     option_positions = []
     positions_list = account_info['securitiesAccount']['positions']
-
-    # TODO: Need to add in current price and p/l open values
     
     for position in positions_list:
+        quantity = position['longQuantity'] - position['shortQuantity']
+
+        # TODO: Need to fix p/l calculations for options / short positions
+        # Need to figure out formula for calculating the short positions correctly
+        current_price = position['marketValue'] / abs(quantity)
+        pl_open = position['marketValue'] - position['averagePrice'] * abs(quantity)
 
         # check the asset type
         if position['instrument']['assetType'] == 'EQUITY': # asset type is shares
@@ -213,11 +292,11 @@ def getPositions():
                 'asset_type': position['instrument']['assetType'],
                 'ticker': position['instrument']['symbol'],
                 'quantity': position['longQuantity'] - position['shortQuantity'],
-                'trade_price': position['averagePrice'],
-                'current_price': 'fixme',
+                'trade_price': f"{position['averagePrice']:.2f}",
+                'current_price': f'{current_price:.2f}',
                 'pl_day': position['currentDayProfitLoss'],
                 'pl_day_percent': position['currentDayProfitLossPercentage'],
-                'pl_open': 'fixme'
+                'pl_open': f'{pl_open:.2f}'
             }
 
             stock_positions.append(stock_position_dict)
@@ -230,8 +309,8 @@ def getPositions():
                 'ticker': position['instrument']['underlyingSymbol'],
                 'description': position['instrument']['description'],
                 'quantity': position['longQuantity'] - position['shortQuantity'],
-                'trade_price': position['averagePrice'],
-                'current_price': 'fixme',
+                'trade_price': f"{position['averagePrice']:.2f}",
+                'current_price': f"{abs(current_price) / 100:.2f}",
                 'pl_day': position['currentDayProfitLoss'],
                 'pl_day_percent': position['currentDayProfitLossPercentage'],
                 'pl_open': 'fixme'
@@ -240,6 +319,18 @@ def getPositions():
             option_positions.append(option_position_dict)
     
     return stock_positions, option_positions
+
+
+def getBalances():
+    account_info = getAccountInfo()
+    balance_dict = {
+        'net_liq': f"{account_info['securitiesAccount']['currentBalances']['liquidationValue']:,}",
+        'cash': f"{account_info['securitiesAccount']['currentBalances']['availableFunds']:,}",
+        'buying_power': f"{account_info['securitiesAccount']['currentBalances']['buyingPower']:,}",
+        'margin_balance': f"{account_info['securitiesAccount']['currentBalances']['marginBalance']:,}"
+    }
+
+    return balance_dict
 
 
 if __name__ == '__main__':
