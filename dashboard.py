@@ -1,16 +1,10 @@
 import plotly          
 import plotly.graph_objects as go
-
 import dash             
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
-# import dash
-# import dash_core_components as dcc
-# import dash_html_components as html
-# from dash.dependencies import Input, Output
-# import plotly.express as px
 import pandas as pd
 from influxdb import InfluxDBClient, DataFrameClient
 import config
@@ -159,7 +153,7 @@ app.layout = html.Div([
     ),
     dcc.Interval(
         id = 'my-interval',
-        interval = 5 * 1000,
+        interval = 10 * 1000,
         n_intervals = 0
     )
 ])
@@ -174,6 +168,7 @@ def updateBalance(num):
     return [getBalances()]
 
 # Update graph on interval
+# TODO: Need to figure out how to preserve ui state on updates when user has panned or zoomed
 @app.callback(
     Output('graph', 'figure'),
     [Input('my-interval', 'n_intervals'),
@@ -211,7 +206,7 @@ def updateGraph(num, timeframe):
     ]
 
     layout = go.Layout(
-        title = emoji.emojize('AMC ded? :('),
+        title = emoji.emojize('Fuck SNAP :shit:', use_aliases=True),
         uirevision = data
     )
     fig = go.Figure(data=data, layout=layout)
@@ -278,12 +273,19 @@ def getPositions():
     positions_list = account_info['securitiesAccount']['positions']
     
     for position in positions_list:
-        quantity = position['longQuantity'] - position['shortQuantity']
-
-        # TODO: Need to fix p/l calculations for options / short positions
-        # Need to figure out formula for calculating the short positions correctly
-        current_price = position['marketValue'] / abs(quantity)
-        pl_open = position['marketValue'] - position['averagePrice'] * abs(quantity)
+        long_quantity = position['longQuantity']
+        short_quantity = position['shortQuantity']
+        quantity = long_quantity - short_quantity
+        trade_price = position['averagePrice']
+        current_price = abs(position['marketValue']) / abs(long_quantity - short_quantity)
+        pl_day = position['currentDayProfitLoss']
+        pl_day_percent = position['currentDayProfitLossPercentage']
+        if quantity > 0:
+            # long position
+            pl_open = ((current_price - trade_price) * abs(quantity))
+        else:
+            # short position
+            pl_open = ((trade_price - current_price) * abs(quantity))
 
         # check the asset type
         if position['instrument']['assetType'] == 'EQUITY': # asset type is shares
@@ -291,29 +293,36 @@ def getPositions():
             stock_position_dict = {
                 'asset_type': position['instrument']['assetType'],
                 'ticker': position['instrument']['symbol'],
-                'quantity': position['longQuantity'] - position['shortQuantity'],
-                'trade_price': f"{position['averagePrice']:.2f}",
+                'quantity': quantity,
+                'trade_price': f'{trade_price:.2f}',
                 'current_price': f'{current_price:.2f}',
-                'pl_day': position['currentDayProfitLoss'],
-                'pl_day_percent': position['currentDayProfitLossPercentage'],
+                'pl_day': f'{pl_day:.2f}',
+                'pl_day_percent': f'{pl_day_percent:.2f}',
                 'pl_open': f'{pl_open:.2f}'
             }
 
             stock_positions.append(stock_position_dict)
 
-        # asset type is an option, determine if cal/put
+
+        # asset type is an option, determine if call/put
         else:
+            if quantity > 0:
+                # long position
+                pl_open = (((current_price) / 100 - trade_price) * abs(quantity)) * 100
+            else:
+                # short position
+                pl_open = ((trade_price - (current_price) / 100) * abs(quantity)) * 100
 
             option_position_dict = {
                 'asset_type': position['instrument']['putCall'],
                 'ticker': position['instrument']['underlyingSymbol'],
                 'description': position['instrument']['description'],
-                'quantity': position['longQuantity'] - position['shortQuantity'],
-                'trade_price': f"{position['averagePrice']:.2f}",
-                'current_price': f"{abs(current_price) / 100:.2f}",
-                'pl_day': position['currentDayProfitLoss'],
-                'pl_day_percent': position['currentDayProfitLossPercentage'],
-                'pl_open': 'fixme'
+                'quantity': quantity,
+                'trade_price': f'{trade_price:.2f}',
+                'current_price': f'{current_price / 100:.2f}',
+                'pl_day': f'{pl_day:.2f}',
+                'pl_day_percent': f'{pl_day_percent:.2f}',
+                'pl_open': f'{pl_open:.2f}'
             }
 
             option_positions.append(option_position_dict)
