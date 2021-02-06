@@ -1,6 +1,7 @@
 import plotly          
 import plotly.graph_objects as go
-import dash             
+import dash
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
@@ -20,21 +21,28 @@ token_path = config.token_path
 redirect_uri = config.redirect_uri
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = [dbc.themes.BOOTSTRAP]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 current_balance = 0
 
-app.layout = html.Div([
-    dash_table.DataTable(
+# Layout Stuff
+def createBalanceTable():
+    return dash_table.DataTable(
         id = 'balance_table',
         columns = [
             {'name': 'Net Liquidity', 'id': 'net_liq'},
             {'name': 'Cash', 'id': 'cash'},
             {'name': 'Buying Power', 'id': 'buying_power'},
             {'name': 'Margin Balance', 'id': 'margin_balance'}
-        ]
-    ),
-    dcc.RadioItems(
+        ],
+        style_header = {'background': '#333', 'font-weight': 'bold'},
+        style_cell = {'background': '#333'}
+    )
+
+
+def createRadioButtons():
+    return dcc.RadioItems(
         options = [
             {'label': '1D', 'value': '1d'},
             {'label': '7D', 'value': '7d'},
@@ -45,13 +53,27 @@ app.layout = html.Div([
         ],
         id = 'timeframe',
         value = '1d',
-        labelStyle = {'display': 'inline-block'}
-    ),
-    dcc.Graph(id='graph', animate=False),
-    html.H1('Positions'),
-    html.H3('Stonks'),
+        labelStyle = {'display': 'inline-block', 'padding': '.3em'}
+    )
+
+
+def createGraph():
+    return dcc.Graph(
+        id='graph', 
+        animate=False,
+        figure = {
+            'layout': go.Layout(
+                paper_bgcolor = '#333',
+                plot_bgcolor = '#333',
+                font = {'color': 'white'}
+            )
+        }
+    )
+
+
+def createStonksTable():
     # TODO: Need to dymanically pull in headers for tables
-    dash_table.DataTable(
+    return dash_table.DataTable(
         id = 'stocks_table',
         columns = [
             {'name': 'Asset Type', 'id': 'asset_type'},
@@ -59,6 +81,7 @@ app.layout = html.Div([
             {'name': 'Quantity', 'id': 'quantity'},
             {'name': 'Trade Price', 'id': 'trade_price'},
             {'name': 'Current Price', 'id': 'current_price'},
+            {'name': 'Net Liquidity', 'id': 'pos_net_liq'},
             {'name': 'P/L Day', 'id': 'pl_day'},
             {'name': 'P/L Day %', 'id': 'pl_day_percent'},
             {'name': 'P/L Open', 'id': 'pl_open'}
@@ -70,16 +93,14 @@ app.layout = html.Div([
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'backgroundColor': 'royalblue',
-                'color': 'white'
+                'color': 'royalblue'
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'backgroundColor': 'red',
-                'color': 'white'
+                'color': 'red'
             },
             {
                 'if': { # positive p/l open
@@ -87,21 +108,23 @@ app.layout = html.Div([
                     'column_id': ['pl_open']
 
                 },
-                'backgroundColor': 'royalblue',
-                'color': 'white'
+                'color': 'royalblue'
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'backgroundColor': 'red',
-                'color': 'white'
+                'color': 'red'
             }
-        ]
-    ),
-    html.H3('Options'),
-    dash_table.DataTable(
+        ],
+        style_header = {'background': '#333', 'font-weight': 'bold'},
+        style_cell = {'background': '#333'}
+    )
+
+
+def createOptionsTable():
+    return dash_table.DataTable(
         id = 'options_table',
         columns = [
             {'name': 'Asset Type', 'id': 'asset_type'},
@@ -110,6 +133,7 @@ app.layout = html.Div([
             {'name': 'Quantity', 'id': 'quantity'},
             {'name': 'Trade Price', 'id': 'trade_price'},
             {'name': 'Current Price', 'id': 'current_price'},
+            {'name': 'Net Liquidity', 'id': 'pos_net_liq'},
             {'name': 'P/L Day', 'id': 'pl_day'},
             {'name': 'P/L Day %', 'id': 'pl_day_percent'},
             {'name': 'P/L Open', 'id': 'pl_open'}
@@ -121,16 +145,14 @@ app.layout = html.Div([
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'backgroundColor': 'royalblue',
-                'color': 'white'
+                'color': 'royalblue'
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'backgroundColor': 'red',
-                'color': 'white'
+                'color': 'red'
             },
             {
                 'if': { # positive p/l open
@@ -138,26 +160,50 @@ app.layout = html.Div([
                     'column_id': ['pl_open']
 
                 },
-                'backgroundColor': 'royalblue',
-                'color': 'white'
+                'color': 'royalblue'
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'backgroundColor': 'red',
-                'color': 'white'
+                'color': 'red'
             }
-        ]
+        ],
+        style_header = {'background': '#333', 'font-weight': 'bold'},
+        style_cell = {'background': '#333'}
+    )
+
+
+app.layout = html.Div([
+    dbc.Row(
+        dbc.Col(html.Div(createBalanceTable()), width = {'size': 6, 'offset': 3})
+    ),
+    dbc.Row(
+        dbc.Col(html.Div(createGraph()), width = {'size': 10, 'offset': 1})
+    ),
+    dbc.Row(
+        dbc.Col(html.Div(createRadioButtons()), width = {'size': 3, 'offset': 5})
+    ),
+    html.H1('Positions'),
+    html.H3('Stonks'),
+    dbc.Row(
+        dbc.Col(html.Div(createStonksTable()), width = {'size': 10, 'offset': 1})
+    ),
+    html.H3('Options'),
+    dbc.Row(
+        dbc.Col(html.Div(createOptionsTable()), width = {'size': 10, 'offset': 1})
     ),
     dcc.Interval(
         id = 'my-interval',
         interval = 10 * 1000,
         n_intervals = 0
     )
-])
+],
+style = {'padding': '2em', 'background': '#333', 'color': 'white'})
 
+
+# CALLBACKS
 
 # Update balance on interval
 @app.callback(
@@ -181,15 +227,15 @@ def updateGraph(num, timeframe):
     elif timeframe == '7d':
         time_interval = '5m'
     elif timeframe == '30d':
-        time_interval = '2h'
+        time_interval = '1h'
     elif timeframe == '90d':
-        time_interval = '1d'
+        time_interval = '2h'
     elif timeframe == '180d':
-        time_interval = '3d'
+        time_interval = '4h'
     elif timeframe == '365d':
-        time_interval = '7d'
+        time_interval = '8h'
     else:
-        time_interval = '7d'
+        time_interval = '168h'
 
     client = DataFrameClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
     query = f'select time, mean(value) as value from balance where time > now() - {timeframe} GROUP BY time({time_interval})'
@@ -201,13 +247,17 @@ def updateGraph(num, timeframe):
         go.Scatter(
             y = df.value,
             x = df.timestamp.tz_convert('US/Eastern'),
-            mode = 'lines'
+            mode = 'lines',
+            line = {'color': 'yellow'}
         )
     ]
 
     layout = go.Layout(
         title = emoji.emojize('Fuck SNAP :shit:', use_aliases=True),
-        uirevision = data
+        uirevision = data,
+        paper_bgcolor = '#333',
+        plot_bgcolor = '#333',
+        font = {'color': 'white'}
     )
     fig = go.Figure(data=data, layout=layout)
 
@@ -273,6 +323,7 @@ def getPositions():
     positions_list = account_info['securitiesAccount']['positions']
     
     for position in positions_list:
+
         long_quantity = position['longQuantity']
         short_quantity = position['shortQuantity']
         quantity = long_quantity - short_quantity
@@ -280,6 +331,7 @@ def getPositions():
         current_price = abs(position['marketValue']) / abs(long_quantity - short_quantity)
         pl_day = position['currentDayProfitLoss']
         pl_day_percent = position['currentDayProfitLossPercentage']
+
         if quantity > 0:
             # long position
             pl_open = ((current_price - trade_price) * abs(quantity))
@@ -296,6 +348,7 @@ def getPositions():
                 'quantity': quantity,
                 'trade_price': f'{trade_price:.2f}',
                 'current_price': f'{current_price:.2f}',
+                'pos_net_liq': f'{position["marketValue"]:.2f}',
                 'pl_day': f'{pl_day:.2f}',
                 'pl_day_percent': f'{pl_day_percent:.2f}',
                 'pl_open': f'{pl_open:.2f}'
@@ -320,6 +373,7 @@ def getPositions():
                 'quantity': quantity,
                 'trade_price': f'{trade_price:.2f}',
                 'current_price': f'{current_price / 100:.2f}',
+                'pos_net_liq': f'{position["marketValue"]:.2f}',
                 'pl_day': f'{pl_day:.2f}',
                 'pl_day_percent': f'{pl_day_percent:.2f}',
                 'pl_open': f'{pl_open:.2f}'
