@@ -6,7 +6,7 @@ from influxdb import InfluxDBClient
 
 
 api_key = config.api_key
-token_path = config.token_path
+token_path = config.balance_token_path
 redirect_uri = config.redirect_uri
 
 
@@ -24,7 +24,7 @@ def connectToApi():
 
 def getAccountInfo():
     c = connectToApi()
-    r = c.get_account('455720137', fields=c.Account.Fields.POSITIONS)
+    r = c.get_account(config.account_number, fields=c.Account.Fields.POSITIONS)
     account_info = r.json()
 
     return account_info

@@ -21,7 +21,6 @@ token_path = config.token_path
 redirect_uri = config.redirect_uri
 
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 current_balance = 0
@@ -36,8 +35,8 @@ def createBalanceTable():
             {'name': 'Buying Power', 'id': 'buying_power'},
             {'name': 'Margin Balance', 'id': 'margin_balance'}
         ],
-        style_header = {'background': '#333', 'font-weight': 'bold'},
-        style_cell = {'background': '#333'}
+        style_header = {'background': '#333'},
+        style_cell = {'background': '#444'}
     )
 
 
@@ -52,8 +51,7 @@ def createRadioButtons():
             {'label': '1Y', 'value': '365d'}
         ],
         id = 'timeframe',
-        value = '1d',
-        labelStyle = {'display': 'inline-block', 'padding': '.3em'}
+        value = '1d'
     )
 
 
@@ -118,8 +116,8 @@ def createStonksTable():
                 'color': 'red'
             }
         ],
-        style_header = {'background': '#333', 'font-weight': 'bold'},
-        style_cell = {'background': '#333'}
+        style_header = {'background': '#333'},
+        style_cell = {'background': '#444'}
     )
 
 
@@ -170,8 +168,8 @@ def createOptionsTable():
                 'color': 'red'
             }
         ],
-        style_header = {'background': '#333', 'font-weight': 'bold'},
-        style_cell = {'background': '#333'}
+        style_header = {'background': '#333'},
+        style_cell = {'background': '#444'}
     )
 
 
@@ -199,8 +197,7 @@ app.layout = html.Div([
         interval = 10 * 1000,
         n_intervals = 0
     )
-],
-style = {'padding': '2em', 'background': '#333', 'color': 'white'})
+])
 
 
 # CALLBACKS
@@ -240,7 +237,16 @@ def updateGraph(num, timeframe):
     client = DataFrameClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
     query = f'select time, mean(value) as value from balance where time > now() - {timeframe} GROUP BY time({time_interval})'
     results = client.query(query)
-    df = results['balance']
+
+    try:
+        df = results['balance']
+    except KeyError as e:
+        print(f'KeyError: {e}')
+        print(f'Unable to pull balance as no plot points in range, falling back to 7d')
+        query = f'select time, mean(value) as value from balance where time > now() - 7d GROUP BY time(5m)'
+        results = client.query(query)
+        df = results['balance']
+        
     df['timestamp'] = df.index
 
     data =[
@@ -259,6 +265,7 @@ def updateGraph(num, timeframe):
         plot_bgcolor = '#333',
         font = {'color': 'white'}
     )
+
     fig = go.Figure(data=data, layout=layout)
 
     fig.update_xaxes(
@@ -296,6 +303,7 @@ def updateOptionPositionss(num):
     return df.to_dict('records')
 
 
+# API Connection
 def connectToApi():
     # generate token
     try:
@@ -310,7 +318,7 @@ def connectToApi():
 
 def getAccountInfo():
     c = connectToApi()
-    r = c.get_account('455720137', fields=c.Account.Fields.POSITIONS)
+    r = c.get_account(config.account_number, fields=c.Account.Fields.POSITIONS)
     account_info = r.json()
 
     return account_info
@@ -331,6 +339,8 @@ def getPositions():
         current_price = abs(position['marketValue']) / abs(long_quantity - short_quantity)
         pl_day = position['currentDayProfitLoss']
         pl_day_percent = position['currentDayProfitLossPercentage']
+        ticker = position['instrument']['symbol']
+
 
         if quantity > 0:
             # long position
@@ -344,7 +354,7 @@ def getPositions():
 
             stock_position_dict = {
                 'asset_type': position['instrument']['assetType'],
-                'ticker': position['instrument']['symbol'],
+                'ticker': ticker,
                 'quantity': quantity,
                 'trade_price': f'{trade_price:.2f}',
                 'current_price': f'{current_price:.2f}',
