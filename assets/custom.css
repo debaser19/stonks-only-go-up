@@ -1,5 +1,4 @@
 body {
-    color: #fff;
     background: #333;
     padding: 2em;
 }
@@ -11,6 +10,10 @@ body {
 
 #timeframe label {
     padding: 0 0.3em;
+}
+
+table, label, h1, h3 {
+    color: white;
 }
 
 th {

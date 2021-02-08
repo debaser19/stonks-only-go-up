@@ -53,6 +53,12 @@ def createRadioButtons():
         id = 'timeframe',
         value = '1d'
     )
+    
+
+def createTickerList():
+    return html.Div([
+        html.H3('Trading tickers')
+    ])
 
 
 def createGraph():
@@ -194,7 +200,7 @@ app.layout = html.Div([
     ),
     dcc.Interval(
         id = 'my-interval',
-        interval = 10 * 1000,
+        interval = 30 * 1000,
         n_intervals = 0
     )
 ])
@@ -202,13 +208,13 @@ app.layout = html.Div([
 
 # CALLBACKS
 
-# Update balance on interval
-@app.callback(
-    Output('balance_table', 'data'),
-    [Input('my-interval', 'n_intervals')]
-)
-def updateBalance(num):
-    return [getBalances()]
+# # Update balance on interval
+# @app.callback(
+#     Output('balance_table', 'data'),
+#     [Input('my-interval', 'n_intervals')]
+# )
+# def updateBalance(num):
+#     return [getBalances()]
 
 # Update graph on interval
 # TODO: Need to figure out how to preserve ui state on updates when user has panned or zoomed
@@ -259,7 +265,7 @@ def updateGraph(num, timeframe):
     ]
 
     layout = go.Layout(
-        title = emoji.emojize('Fuck SNAP :shit:', use_aliases=True),
+        title = emoji.emojize('This isn\'t where I parked my tendies... :rocket::rocket::rocket:', use_aliases=True),
         uirevision = data,
         paper_bgcolor = '#333',
         plot_bgcolor = '#333',
@@ -282,25 +288,37 @@ def updateGraph(num, timeframe):
 # Update stock positions on interval
 @app.callback(
     Output('stocks_table', 'data'),
-    [Input('my-interval', 'n_intervals')]
-)
-def updateStockPositions(num):
-    stock_positions = getPositions()[0]
-    df = pd.DataFrame(stock_positions)
-
-    return df.to_dict('records')
-
-
-# Update option positions on interval
-@app.callback(
     Output('options_table', 'data'),
+    Output('balance_table', 'data'),
     [Input('my-interval', 'n_intervals')]
 )
-def updateOptionPositionss(num):
-    options_positions = getPositions()[1]
-    df = pd.DataFrame(options_positions)
+def updatePositions(num):
+    all_positions = getPositions()
+    stock_positions = all_positions[0]
+    options_positions = all_positions[1]
+    account_balance = all_positions[2]
+    stonks_df = pd.DataFrame(stock_positions)
+    options_df = pd.DataFrame(options_positions)
+    print('Updating Stonks table...')
+    print(stonks_df)
+    print('Updating Options table...')
+    print(options_df)
 
-    return df.to_dict('records')
+    return stonks_df.to_dict('records'), options_df.to_dict('records'), [account_balance]
+
+
+# # Update option positions on interval
+# @app.callback(
+#     Output('options_table', 'data'),
+#     [Input('my-interval', 'n_intervals')]
+# )
+# def updateOptionPositions(num):
+#     options_positions = getPositions()[1]
+#     df = pd.DataFrame(options_positions)
+#     print('Updating Options table...')
+#     print(df)
+
+#     return df.to_dict('records')
 
 
 # API Connection
@@ -320,6 +338,7 @@ def getAccountInfo():
     c = connectToApi()
     r = c.get_account(config.account_number, fields=c.Account.Fields.POSITIONS)
     account_info = r.json()
+    print('Refreshing account info...')
 
     return account_info
 
@@ -368,7 +387,7 @@ def getPositions():
 
 
         # asset type is an option, determine if call/put
-        else:
+        if position['instrument']['assetType'] == 'OPTION':
             if quantity > 0:
                 # long position
                 pl_open = (((current_price) / 100 - trade_price) * abs(quantity)) * 100
@@ -378,7 +397,7 @@ def getPositions():
 
             option_position_dict = {
                 'asset_type': position['instrument']['putCall'],
-                'ticker': position['instrument']['underlyingSymbol'],
+                'ticker': position['instrument']['symbol'],
                 'description': position['instrument']['description'],
                 'quantity': quantity,
                 'trade_price': f'{trade_price:.2f}',
@@ -390,20 +409,40 @@ def getPositions():
             }
 
             option_positions.append(option_position_dict)
+
+    list_of_tickers = []
+    for stock_ticker in stock_positions:
+        if stock_ticker['ticker'] not in list_of_tickers:
+            list_of_tickers.append(stock_ticker['ticker'])
     
-    return stock_positions, option_positions
+    for option_ticker in option_positions:
+        t = option_ticker['ticker'].split('_')[0]
+        if t not in list_of_tickers:
+            list_of_tickers.append(t)
 
+    
+    print(f'List of tickers: {list_of_tickers}')
 
-def getBalances():
-    account_info = getAccountInfo()
     balance_dict = {
         'net_liq': f"{account_info['securitiesAccount']['currentBalances']['liquidationValue']:,}",
         'cash': f"{account_info['securitiesAccount']['currentBalances']['availableFunds']:,}",
         'buying_power': f"{account_info['securitiesAccount']['currentBalances']['buyingPower']:,}",
         'margin_balance': f"{account_info['securitiesAccount']['currentBalances']['marginBalance']:,}"
     }
+    
+    return stock_positions, option_positions, balance_dict, list_of_tickers
 
-    return balance_dict
+
+# def getBalances():
+#     account_info = getAccountInfo()
+#     balance_dict = {
+#         'net_liq': f"{account_info['securitiesAccount']['currentBalances']['liquidationValue']:,}",
+#         'cash': f"{account_info['securitiesAccount']['currentBalances']['availableFunds']:,}",
+#         'buying_power': f"{account_info['securitiesAccount']['currentBalances']['buyingPower']:,}",
+#         'margin_balance': f"{account_info['securitiesAccount']['currentBalances']['marginBalance']:,}"
+#     }
+
+#     return balance_dict
 
 
 if __name__ == '__main__':
