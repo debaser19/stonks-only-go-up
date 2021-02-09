@@ -265,7 +265,7 @@ def updateGraph(num, timeframe):
     ]
 
     layout = go.Layout(
-        title = emoji.emojize('This isn\'t where I parked my tendies -- HOTDOGS --... :rocket::rocket::rocket:', use_aliases=True),
+        title = emoji.emojize('On the train to tendie town :rocket::rocket::rocket:', use_aliases=True),
         uirevision = data,
         paper_bgcolor = '#333',
         plot_bgcolor = '#333',
