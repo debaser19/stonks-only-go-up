@@ -16,6 +16,7 @@ jobs:
         user: sstoveld
         key: ${{ secrets.STONKS_SECRET }}
         port: 22
+        args: "-tt -vvv"
         command: |
           cd /home/sstoveld/stonks-only-go-up
           git pull origin main
