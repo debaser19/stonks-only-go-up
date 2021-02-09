@@ -21,4 +21,4 @@ jobs:
           cd /home/sstoveld/stonks-only-go-up
           git pull origin main
           git status
-          echo 'hotdogs'
+          echo 'hotdogs2'
