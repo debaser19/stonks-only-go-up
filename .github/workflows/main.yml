@@ -13,11 +13,11 @@ jobs:
       uses: fifsky/ssh-action@master
       with:
         host: ${{ secrets.HOST_SECRET }}
-        username: sstoveld
+        user: sstoveld
         key: ${{ secrets.STONKS_SECRET }}
         port: 22
-        script: |
-          cd stonks-only-go-up
+        command: |
+          cd /home/sstoveld/stonks-only-go-up
           git pull origin main
           git status
           echo 'hotdogs'
