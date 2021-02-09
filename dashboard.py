@@ -240,7 +240,7 @@ def updateGraph(num, timeframe):
     else:
         time_interval = '168h'
 
-    client = DataFrameClient('localhost', 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
+    client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
     query = f'select time, mean(value) as value from balance where time > now() - {timeframe} GROUP BY time({time_interval})'
     results = client.query(query)
 
