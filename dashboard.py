@@ -97,14 +97,14 @@ def createStonksTable():
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'color': 'royalblue'
+                'color': 'skyblue'
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'color': 'red'
+                'color': 'orangered'
             },
             {
                 'if': { # positive p/l open
@@ -112,14 +112,14 @@ def createStonksTable():
                     'column_id': ['pl_open']
 
                 },
-                'color': 'royalblue'
+                'color': 'skyblue'
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'color': 'red'
+                'color': 'orangered'
             }
         ],
         style_header = {'background': '#333'},
@@ -149,14 +149,14 @@ def createOptionsTable():
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'color': 'royalblue'
+                'color': 'skyblue'
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'color': 'red'
+                'color': 'orangered'
             },
             {
                 'if': { # positive p/l open
@@ -164,14 +164,14 @@ def createOptionsTable():
                     'column_id': ['pl_open']
 
                 },
-                'color': 'royalblue'
+                'color': 'skyblue'
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'color': 'red'
+                'color': 'orangered'
             }
         ],
         style_header = {'background': '#333'},
