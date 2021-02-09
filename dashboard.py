@@ -347,16 +347,7 @@ def getPositions():
     account_info = getAccountInfo()
     stock_positions = []
     option_positions = []
-    # sometimes this fails to pull in the account
-    # handle the execption and try again in a few seconds
-    try:
-        positions_list = account_info['securitiesAccount']['positions']
-    except KeyError as e:
-        print(f'Failed to pull in account info: {e}')
-        print('Sleeping for 5s then trying again')
-        time.sleep(3)
-        positions_list = account_info['securitiesAccount']['positions']
-
+    positions_list = account_info['securitiesAccount']['positions']
     
     for position in positions_list:
 
