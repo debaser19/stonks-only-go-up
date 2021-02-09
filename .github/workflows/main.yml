@@ -20,3 +20,4 @@ jobs:
           cd stonks-only-go-up
           git pull origin master
           git status
+          echo 'hotdogs'
