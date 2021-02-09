@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: testing stonks ssh connection
-      uses: appleboy/ssh-action@master
+      uses: fifsky/ssh-action@master
       with:
-        host: 192.168.1.213
+        host: ${{ secrets.HOST_SECRET }}
         username: sstoveld
         key: ${{ secrets.STONKS_SECRET }}
         port: 22
         script: |
           cd stonks-only-go-up
-          git pull origin master
+          git pull origin main
           git status
           echo 'hotdogs'
