@@ -269,7 +269,8 @@ def updateGraph(num, timeframe):
         uirevision = data,
         paper_bgcolor = '#333',
         plot_bgcolor = '#333',
-        font = {'color': 'white'}
+        font = {'color': 'white'},
+        hovermode = 'x'
     )
 
     fig = go.Figure(data=data, layout=layout)
