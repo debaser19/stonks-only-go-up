@@ -189,14 +189,18 @@ app.layout = html.Div([
     dbc.Row(
         dbc.Col(html.Div(createRadioButtons()), width = {'size': 3, 'offset': 5})
     ),
-    html.H1('Positions'),
-    html.H3('Stonks'),
     dbc.Row(
-        dbc.Col(html.Div(createStonksTable()), width = {'size': 10, 'offset': 1})
+        dbc.Col(html.Div([
+            html.H1('Positions'),
+            html.H3('Stonks'),
+            createStonksTable()
+        ]), width = {'size': 10, 'offset': 1})
     ),
-    html.H3('Options'),
     dbc.Row(
-        dbc.Col(html.Div(createOptionsTable()), width = {'size': 10, 'offset': 1})
+        dbc.Col(html.Div([
+            html.H3('Options'),
+            createOptionsTable()
+        ]), width = {'size': 10, 'offset': 1})
     ),
     dcc.Interval(
         id = 'my-interval',
@@ -207,14 +211,6 @@ app.layout = html.Div([
 
 
 # CALLBACKS
-
-# # Update balance on interval
-# @app.callback(
-#     Output('balance_table', 'data'),
-#     [Input('my-interval', 'n_intervals')]
-# )
-# def updateBalance(num):
-#     return [getBalances()]
 
 # Update graph on interval
 # TODO: Need to figure out how to preserve ui state on updates when user has panned or zoomed
@@ -265,7 +261,7 @@ def updateGraph(num, timeframe):
     ]
 
     layout = go.Layout(
-        title = emoji.emojize('On the train to tendie town :rocket::rocket::rocket:', use_aliases=True),
+        title = emoji.emojize(f'Portfolio performance over the past {timeframe}, grouped by {time_interval}', use_aliases=True),
         uirevision = data,
         paper_bgcolor = '#333',
         plot_bgcolor = '#333',
@@ -306,20 +302,6 @@ def updatePositions(num):
     print(options_df)
 
     return stonks_df.to_dict('records'), options_df.to_dict('records'), [account_balance]
-
-
-# # Update option positions on interval
-# @app.callback(
-#     Output('options_table', 'data'),
-#     [Input('my-interval', 'n_intervals')]
-# )
-# def updateOptionPositions(num):
-#     options_positions = getPositions()[1]
-#     df = pd.DataFrame(options_positions)
-#     print('Updating Options table...')
-#     print(df)
-
-#     return df.to_dict('records')
 
 
 # API Connection
@@ -432,18 +414,6 @@ def getPositions():
     }
     
     return stock_positions, option_positions, balance_dict, list_of_tickers
-
-
-# def getBalances():
-#     account_info = getAccountInfo()
-#     balance_dict = {
-#         'net_liq': f"{account_info['securitiesAccount']['currentBalances']['liquidationValue']:,}",
-#         'cash': f"{account_info['securitiesAccount']['currentBalances']['availableFunds']:,}",
-#         'buying_power': f"{account_info['securitiesAccount']['currentBalances']['buyingPower']:,}",
-#         'margin_balance': f"{account_info['securitiesAccount']['currentBalances']['marginBalance']:,}"
-#     }
-
-#     return balance_dict
 
 
 if __name__ == '__main__':
