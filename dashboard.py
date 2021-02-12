@@ -192,7 +192,7 @@ app.layout = html.Div([
     dbc.Row(
         dbc.Col(html.Div([
             html.H1('Positions'),
-            html.H3('Stonks'),
+            html.H3('Stocks'),
             createStonksTable()
         ]), width = {'size': 10, 'offset': 1})
     ),
