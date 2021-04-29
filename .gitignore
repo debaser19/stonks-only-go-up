@@ -16,3 +16,6 @@ token.bak
 balance_token
 .venv/etc/jupyter/nbconfig/notebook.d/plotlywidget.json
 .DS_Store
+.venv/etc/jupyter/nbconfig/notebook.d/pydeck.json
+.venv/etc/jupyter/nbconfig/notebook.d/widgetsnbextension.json
+portfolio-update-3ef72f62cf31.json
