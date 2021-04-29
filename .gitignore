@@ -14,3 +14,5 @@ lib64
 etc/jupyter/nbconfig/notebook.d/plotlywidget.json
 token.bak
 balance_token
+.venv/etc/jupyter/nbconfig/notebook.d/plotlywidget.json
+.DS_Store

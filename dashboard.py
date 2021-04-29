@@ -315,6 +315,7 @@ def connectToApi():
         with webdriver.Chrome() as driver:
             c = auth.client_from_login_flow(
                 driver, api_key, redirect_uri, token_path)
+            return c
 
 
 def getAccountInfo():
