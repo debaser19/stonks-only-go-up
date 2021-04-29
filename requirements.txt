@@ -1,8 +1,4 @@
 tda-api
-flask
 pandas
-plotly
-dash
-dash-bootstrap-components
 emoji
 influxdb
