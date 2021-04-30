@@ -134,7 +134,8 @@ if __name__ == '__main__':
                 'Cash': the_goods[2]['cash'],
                 'MarginBalance': the_goods[2]['margin_balance'],
                 'BuyingPower': the_goods[2]['buying_power'],
-                'Positions': str(the_goods[0])
+                # TODO: Add in option positions
+                'Positions': str(the_goods[0])  # only logging stock positions as indicated by index [0]
             }
         }
     ]
