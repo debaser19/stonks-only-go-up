@@ -9,7 +9,6 @@ chromedriver.exe
 config.py
 pyvenv.cfg
 token
-.vscode/settings.json
 lib64
 etc/jupyter/nbconfig/notebook.d/plotlywidget.json
 token.bak
