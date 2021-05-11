@@ -12,14 +12,16 @@ def connect_to_api():
 
 
 def get_balance_history(timeframe):
+    tz_offset = 4
     client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
-    query = f'select time, NetLiq from balance where time > now() - {timeframe}'
+    query = f'select time, NetLiq from balance where time > now() - {tz_offset}h - {timeframe}'
     results = client.query(query)
     try:
         df = pd.DataFrame(results['balance'])
         df['NetLiq'] = pd.to_numeric(df['NetLiq'], downcast='float')
     except KeyError as e:
         st.write(f'No plot points in selected timeframe: {timeframe}')
+        st.write(e)
 
     return df
     # return results['balance']
