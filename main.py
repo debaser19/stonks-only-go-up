@@ -46,14 +46,31 @@ def get_current_positions(position):
     return ast.literal_eval(positions)
 
 
-def main():
-    pos_selectbox = st.sidebar.selectbox(
-    "Select a timeframe",
-    ("1h", "12h", "24h", "7d", "30d")
-    )
-    st.title("Tendies")
-    st.dataframe(get_current_balances())
-    chart_data = get_balance_history(pos_selectbox)
+def get_ticker_list():
+    positions = get_current_positions('Positions')
+    
+    return positions
+
+
+def get_portfolio_percentages():
+    positions = get_current_positions('Positions')
+
+    tickers = [t['ticker'] for t in positions]
+    value = [v['pos_net_liq'] for v in positions]
+    
+    data = [
+        go.Pie(
+            labels = tickers,
+             values = value,
+             textinfo = 'label+percent'
+        )
+    ]
+
+    return go.Figure(data)
+
+
+def create_graph(pos_slider):
+    chart_data = get_balance_history(pos_slider)
     chart_data['Date'] = chart_data.index
     # chart_data.index = chart_data.index.tz_convert('US/Eastern')
 
@@ -85,22 +102,28 @@ def main():
         ]
     )
 
-    #px
-    # fig = px.line(chart_data, x = 'Date', y = 'NetLiq')
-    # fig.update_xaxes(
-    #     tickformat = '%I:%M %p\n%x',
-    #     rangebreaks = [
-    #         dict(bounds = ['sat', 'mon']),
-    #         dict(bounds = [20, 4], pattern = 'hour')
-    #     ]
-    # )
+    return fig
 
-    st.plotly_chart(fig, use_container_width=True)
+
+def main():
+    pos_slider = st.sidebar.select_slider(
+        'Select a timeframe',
+        options = ["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+    st.title("Tendies")
+    st.dataframe(get_current_balances())
+
+    # port graph
+    st.plotly_chart(create_graph(pos_slider), use_container_width=True)
+
+    # port pie chart
+    st.plotly_chart(get_portfolio_percentages())
+
+    # TODO: convert tables to plotly tables
+    # positions
     st.write('Stocks')
     st.table(get_current_positions('Positions'))
     st.write('Options')
     st.table(get_current_positions('Options'))
-    print(chart_data)
 
 
 if __name__ == '__main__':
