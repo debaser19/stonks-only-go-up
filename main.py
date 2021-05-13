@@ -72,15 +72,22 @@ def get_portfolio_percentages():
 def create_graph(pos_slider):
     chart_data = get_balance_history(pos_slider)
     chart_data['Date'] = chart_data.index
-    # chart_data.index = chart_data.index.tz_convert('US/Eastern')
+    
+    # check if red or green
+    if chart_data.NetLiq.iloc[0] < chart_data.NetLiq.iloc[-1]:
+        line_color = 'lightgreen'
+    elif chart_data.NetLiq.iloc[0] > chart_data.NetLiq.iloc[-1]:
+        line_color = 'red'
+    else:
+        line_color = 'yellow'
 
-    # go
+    # plotly go
     data =[
         go.Scatter(
             y = chart_data.NetLiq,
             x = chart_data.Date,
             mode = 'lines',
-            line = {'color': 'yellow'}
+            line = {'color': f'{line_color}'}
         )
     ]
 
@@ -105,6 +112,14 @@ def create_graph(pos_slider):
     return fig
 
 
+def create_table(positions):
+    pos_df = pd.DataFrame(positions)
+    pos_df.set_index('ticker', inplace=True)
+    pos_df.index.name = 'Ticker'
+
+    return pos_df
+
+
 def main():
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
@@ -118,12 +133,13 @@ def main():
     # port pie chart
     st.plotly_chart(get_portfolio_percentages())
 
-    # TODO: convert tables to plotly tables
     # positions
     st.write('Stocks')
-    st.table(get_current_positions('Positions'))
+    st.table(create_table(get_current_positions('Positions')))
+    # st.table(get_current_positions('Positions'))
     st.write('Options')
-    st.table(get_current_positions('Options'))
+    st.table(create_table(get_current_positions('Options')))
+    # st.table(get_current_positions('Options'))
 
 
 if __name__ == '__main__':
