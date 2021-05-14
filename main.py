@@ -47,26 +47,41 @@ def get_current_positions(position):
 
 
 def get_ticker_list():
-    positions = get_current_positions('Positions')
-    
-    return positions
+    option_positions = get_current_positions('Options')
+    option_tickers = [t['ticker'].split('_')[0] for t in option_positions]
 
+    stock_positions = get_current_positions('Positions')
+    stock_tickers = [t['ticker'] for t in stock_positions]
+
+    return list(set(option_tickers) | set(stock_tickers))
+    
 
 def get_portfolio_percentages():
-    positions = get_current_positions('Positions')
+    option_positions = get_current_positions('Options')
+    option_tickers = [t['ticker'] for t in option_positions]
+    option_value = [t['pos_net_liq'] for t in option_positions]
 
-    tickers = [t['ticker'] for t in positions]
-    value = [v['pos_net_liq'] for v in positions]
-    
-    data = [
+    option_data = [
         go.Pie(
-            labels = tickers,
-             values = value,
+            labels = option_tickers,
+            values = option_value,
+            textinfo = 'label+percent'
+        )
+    ]
+
+    stock_positions = get_current_positions('Positions')
+    stock_tickers = [t['ticker'] for t in stock_positions]
+    stock_value = [v['pos_net_liq'] for v in stock_positions]
+    
+    stock_data = [
+        go.Pie(
+            labels = stock_tickers,
+             values = stock_value,
              textinfo = 'label+percent'
         )
     ]
 
-    return go.Figure(data)
+    return go.Figure(stock_data), go.Figure(option_data)
 
 
 def create_graph(pos_slider):
@@ -121,22 +136,31 @@ def create_table(positions):
 
 
 def main():
+    # sidebar
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
         options = ["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+
+    st.sidebar.write(get_ticker_list())
+
+    # main section    
     st.title("Tendies")
     st.dataframe(get_current_balances())
 
     # port graph
     st.plotly_chart(create_graph(pos_slider), use_container_width=True)
 
-    # port pie chart
-    st.plotly_chart(get_portfolio_percentages())
+    # stock pie chart
+    st.plotly_chart(get_portfolio_percentages()[0])
 
     # positions
     st.write('Stocks')
     st.table(create_table(get_current_positions('Positions')))
     # st.table(get_current_positions('Positions'))
+
+    # option pie chart
+    st.plotly_chart(get_portfolio_percentages()[1])
+
     st.write('Options')
     st.table(create_table(get_current_positions('Options')))
     # st.table(get_current_positions('Options'))
