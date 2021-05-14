@@ -58,7 +58,7 @@ def get_ticker_list():
 
 def get_portfolio_percentages():
     option_positions = get_current_positions('Options')
-    option_tickers = [t['ticker'] for t in option_positions]
+    option_tickers = [t['description'] for t in option_positions]
     option_value = [t['pos_net_liq'] for t in option_positions]
 
     option_data = [
@@ -136,32 +136,42 @@ def create_table(positions):
 
 
 def main():
+    st.set_page_config(layout="wide") 
     # sidebar
+    st.sidebar.header("Timeframe Selection")
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
         options = ["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
 
+    st.sidebar.header("Ticker List")
     st.sidebar.write(get_ticker_list())
 
-    # main section    
+    # main section
     st.title("Tendies")
     st.dataframe(get_current_balances())
 
     # port graph
     st.plotly_chart(create_graph(pos_slider), use_container_width=True)
 
-    # stock pie chart
-    st.plotly_chart(get_portfolio_percentages()[0])
+    # set up cols
+    col1, col2 = st.beta_columns(2)
 
+    col1.header("Stonks")
+    # stock pie chart
+    with col1:
+        st.plotly_chart(get_portfolio_percentages()[0])
+
+    col2.header("Options")
+    # option pie chart
+    with col2:
+        st.plotly_chart(get_portfolio_percentages()[1])
+    
     # positions
-    st.write('Stocks')
+    st.header('Stonks')
     st.table(create_table(get_current_positions('Positions')))
     # st.table(get_current_positions('Positions'))
 
-    # option pie chart
-    st.plotly_chart(get_portfolio_percentages()[1])
-
-    st.write('Options')
+    st.header('Options')
     st.table(create_table(get_current_positions('Options')))
     # st.table(get_current_positions('Options'))
 
