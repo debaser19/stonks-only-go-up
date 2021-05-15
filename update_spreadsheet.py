@@ -3,7 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 
 def get_current_balance():
-    from influxdb import InfluxDBClient, DataFrameClient
+    from influxdb import DataFrameClient
     import config
 
     client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
@@ -15,10 +15,11 @@ def get_current_balance():
 
 def update_spreadsheet(balance):
     # define the scope
-    scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
     # add credentials to the account
-    creds = ServiceAccountCredentials.from_json_keyfile_name('/home/sstoveld/stonks-only-go-up/portfolio-update-3ef72f62cf31.json', scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name('/home/sstoveld/stonks-only-go-up/portfolio-update'
+                                                             '-3ef72f62cf31.json', scope)
 
     # authorize the clientsheet
     client = gspread.authorize(creds)
@@ -50,6 +51,5 @@ def main():
     update_spreadsheet(get_current_balance())
     
 
-    
 if __name__ == '__main__':
     main()

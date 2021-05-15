@@ -1,9 +1,7 @@
-from tda import auth, client
-import json
+from tda import auth
 import config
 import datetime
 from influxdb import InfluxDBClient
-import ast
 
 
 api_key = config.api_key
@@ -11,7 +9,7 @@ token_path = config.balance_token_path
 redirect_uri = config.redirect_uri
 
 
-def connectToApi():
+def connect_to_api():
     # generate token
     try:
         c = auth.client_from_token_file(token_path, api_key)
@@ -24,27 +22,14 @@ def connectToApi():
             return c
 
 
-def getAccountInfo():
-    c = connectToApi()
+def get_account_info():
+    c = connect_to_api()
     r = c.get_account(config.account_number, fields=c.Account.Fields.POSITIONS)
-    account_info = r.json()
 
-    return account_info
-
-
-# def getBalances():
-#     balance_dict = {
-#         'net_liq': account_info['securitiesAccount']['currentBalances']['liquidationValue'],
-#         'cash': account_info['securitiesAccount']['currentBalances']['availableFunds'],
-#         'buying_power': account_info['securitiesAccount']['currentBalances']['buyingPower'],
-#         'margin_balance': account_info['securitiesAccount']['currentBalances']['marginBalance']
-#     }
-
-#     return balance_dict
+    return r.json()
 
 
 def get_positions():
-    # account_info = getAccountInfo()
     stock_positions = []
     option_positions = []
     positions_list = account_info['securitiesAccount']['positions']
@@ -60,7 +45,6 @@ def get_positions():
         pl_day_percent = position['currentDayProfitLossPercentage']
         ticker = position['instrument']['symbol']
 
-
         if quantity > 0:
             # long position
             pl_open = ((current_price - trade_price) * abs(quantity))
@@ -69,7 +53,7 @@ def get_positions():
             pl_open = ((trade_price - current_price) * abs(quantity))
 
         # check the asset type
-        if position['instrument']['assetType'] == 'EQUITY': # asset type is shares
+        if position['instrument']['assetType'] == 'EQUITY':  # asset type is shares
 
             stock_position_dict = {
                 'asset_type': position['instrument']['assetType'],
@@ -85,15 +69,14 @@ def get_positions():
 
             stock_positions.append(stock_position_dict)
 
-
         # asset type is an option, determine if call/put
         if position['instrument']['assetType'] == 'OPTION':
             if quantity > 0:
                 # long position
-                pl_open = (((current_price) / 100 - trade_price) * abs(quantity)) * 100
+                pl_open = ((current_price / 100 - trade_price) * abs(quantity)) * 100
             else:
                 # short position
-                pl_open = ((trade_price - (current_price) / 100) * abs(quantity)) * 100
+                pl_open = ((trade_price - current_price / 100) * abs(quantity)) * 100
 
             option_position_dict = {
                 'asset_type': position['instrument']['putCall'],
@@ -121,7 +104,7 @@ def get_positions():
 
 
 if __name__ == '__main__':
-    account_info = getAccountInfo()
+    account_info = get_account_info()
     the_goods = get_positions()
     now = datetime.datetime.now()
 

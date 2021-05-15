@@ -1,9 +1,8 @@
 import streamlit as st
-from influxdb import InfluxDBClient, DataFrameClient
+from influxdb import DataFrameClient
 import pandas as pd
 import config
 import ast
-import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -19,12 +18,10 @@ def get_balance_history(timeframe):
     try:
         df = pd.DataFrame(results['balance'])
         df['NetLiq'] = pd.to_numeric(df['NetLiq'], downcast='float')
+        return df
     except KeyError as e:
         st.write(f'No plot points in selected timeframe: {timeframe}')
         st.write(e)
-
-    return df
-    # return results['balance']
 
 
 def get_current_balances():
@@ -63,9 +60,9 @@ def get_portfolio_percentages():
 
     option_data = [
         go.Pie(
-            labels = option_tickers,
-            values = option_value,
-            textinfo = 'label+percent'
+            labels=option_tickers,
+            values=option_value,
+            textinfo='label+percent'
         )
     ]
 
@@ -75,9 +72,9 @@ def get_portfolio_percentages():
     
     stock_data = [
         go.Pie(
-            labels = stock_tickers,
-             values = stock_value,
-             textinfo = 'label+percent'
+            labels=stock_tickers,
+            values=stock_value,
+            textinfo='label+percent'
         )
     ]
 
@@ -97,30 +94,30 @@ def create_graph(pos_slider):
         line_color = 'yellow'
 
     # plotly go
-    data =[
+    data = [
         go.Scatter(
-            y = chart_data.NetLiq,
-            x = chart_data.Date,
-            mode = 'lines',
-            line = {'color': f'{line_color}'}
+            y=chart_data.NetLiq,
+            x=chart_data.Date,
+            mode='lines',
+            line={'color': f'{line_color}'}
         )
     ]
 
     layout = go.Layout(
-        uirevision = data,
-        paper_bgcolor = 'rgb(14, 17, 23)',
-        plot_bgcolor = 'rgb(14, 17, 23)',
-        font = {'color': 'white'},
-        hovermode = 'x'
+        uirevision=data,
+        paper_bgcolor='rgb(14, 17, 23)',
+        plot_bgcolor='rgb(14, 17, 23)',
+        font={'color': 'white'},
+        hovermode='x'
     )
 
     fig = go.Figure(data=data, layout=layout)
 
     fig.update_xaxes(
-        tickformat = '%I:%M %p\n%x',
-        rangebreaks = [
-            dict(bounds = ['sat', 'mon']),
-            dict(bounds = [20, 4], pattern = 'hour')
+        tickformat='%I:%M %p\n%x',
+        rangebreaks=[
+            dict(bounds=['sat', 'mon']),
+            dict(bounds=[20, 4], pattern='hour')
         ]
     )
 
@@ -141,14 +138,15 @@ def main():
     st.sidebar.header("Timeframe Selection")
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
-        options = ["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
 
     st.sidebar.header("Ticker List")
     st.sidebar.write(get_ticker_list())
 
     # main section
     st.title("Tendies")
-    st.dataframe(get_current_balances())
+    # st.dataframe(get_current_balances())
+    st.write(get_current_balances())
 
     # port graph
     st.plotly_chart(create_graph(pos_slider), use_container_width=True)
