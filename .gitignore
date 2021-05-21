@@ -1,13 +1,8 @@
 __pycache__/
-Include/
-Lib/
-Scripts/
-bin/
-lib/
-share/
+.venv/
+.idea/
 chromedriver.exe
 config.py
-pyvenv.cfg
 token
 lib64
 etc/jupyter/nbconfig/notebook.d/plotlywidget.json

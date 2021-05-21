@@ -1,9 +1,8 @@
 import streamlit as st
-from influxdb import InfluxDBClient, DataFrameClient
+from influxdb import DataFrameClient
 import pandas as pd
 import config
 import ast
-import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -19,12 +18,10 @@ def get_balance_history(timeframe):
     try:
         df = pd.DataFrame(results['balance'])
         df['NetLiq'] = pd.to_numeric(df['NetLiq'], downcast='float')
+        return df
     except KeyError as e:
         st.write(f'No plot points in selected timeframe: {timeframe}')
         st.write(e)
-
-    return df
-    # return results['balance']
 
 
 def get_current_balances():
@@ -47,83 +44,134 @@ def get_current_positions(position):
 
 
 def get_ticker_list():
-    positions = get_current_positions('Positions')
-    
-    return positions
+    option_positions = get_current_positions('Options')
+    option_tickers = [t['ticker'].split('_')[0] for t in option_positions]
 
+    stock_positions = get_current_positions('Positions')
+    stock_tickers = [t['ticker'] for t in stock_positions]
+
+    return list(set(option_tickers) | set(stock_tickers))
+    
 
 def get_portfolio_percentages():
-    positions = get_current_positions('Positions')
+    option_positions = get_current_positions('Options')
+    option_tickers = [t['description'] for t in option_positions]
+    option_value = [t['pos_net_liq'] for t in option_positions]
 
-    tickers = [t['ticker'] for t in positions]
-    value = [v['pos_net_liq'] for v in positions]
-    
-    data = [
+    option_data = [
         go.Pie(
-            labels = tickers,
-             values = value,
-             textinfo = 'label+percent'
+            labels=option_tickers,
+            values=option_value,
+            textinfo='label+percent'
         )
     ]
 
-    return go.Figure(data)
+    stock_positions = get_current_positions('Positions')
+    stock_tickers = [t['ticker'] for t in stock_positions]
+    stock_value = [v['pos_net_liq'] for v in stock_positions]
+    
+    stock_data = [
+        go.Pie(
+            labels=stock_tickers,
+            values=stock_value,
+            textinfo='label+percent'
+        )
+    ]
+
+    return go.Figure(stock_data), go.Figure(option_data)
 
 
 def create_graph(pos_slider):
     chart_data = get_balance_history(pos_slider)
     chart_data['Date'] = chart_data.index
-    # chart_data.index = chart_data.index.tz_convert('US/Eastern')
+    
+    # check if red or green
+    if chart_data.NetLiq.iloc[0] < chart_data.NetLiq.iloc[-1]:
+        line_color = 'lightgreen'
+    elif chart_data.NetLiq.iloc[0] > chart_data.NetLiq.iloc[-1]:
+        line_color = 'red'
+    else:
+        line_color = 'yellow'
 
-    # go
-    data =[
+    # plotly go
+    data = [
         go.Scatter(
-            y = chart_data.NetLiq,
-            x = chart_data.Date,
-            mode = 'lines',
-            line = {'color': 'yellow'}
+            y=chart_data.NetLiq,
+            x=chart_data.Date,
+            mode='lines',
+            line={'color': f'{line_color}'}
         )
     ]
 
     layout = go.Layout(
-        uirevision = data,
-        paper_bgcolor = 'rgb(14, 17, 23)',
-        plot_bgcolor = 'rgb(14, 17, 23)',
-        font = {'color': 'white'},
-        hovermode = 'x'
+        uirevision=data,
+        paper_bgcolor='rgb(14, 17, 23)',
+        plot_bgcolor='rgb(14, 17, 23)',
+        font={'color': 'white'},
+        hovermode='x'
     )
 
     fig = go.Figure(data=data, layout=layout)
 
     fig.update_xaxes(
-        tickformat = '%I:%M %p\n%x',
-        rangebreaks = [
-            dict(bounds = ['sat', 'mon']),
-            dict(bounds = [20, 4], pattern = 'hour')
+        tickformat='%I:%M %p\n%x',
+        rangebreaks=[
+            dict(bounds=['sat', 'mon']),
+            dict(bounds=[20, 4], pattern='hour')
         ]
     )
 
     return fig
 
 
+def create_table(positions):
+    pos_df = pd.DataFrame(positions)
+    pos_df.set_index('ticker', inplace=True)
+    pos_df.index.name = 'Ticker'
+
+    return pos_df
+
+
 def main():
+    st.set_page_config(layout="wide") 
+    # sidebar
+    st.sidebar.header("Timeframe Selection")
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
-        options = ["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+
+    st.sidebar.header("Ticker List")
+    st.sidebar.write(get_ticker_list())
+
+    # main section
     st.title("Tendies")
-    st.dataframe(get_current_balances())
+    # st.dataframe(get_current_balances())
+    st.write(get_current_balances())
 
     # port graph
     st.plotly_chart(create_graph(pos_slider), use_container_width=True)
 
-    # port pie chart
-    st.plotly_chart(get_portfolio_percentages())
+    # set up cols
+    col1, col2 = st.beta_columns(2)
 
-    # TODO: convert tables to plotly tables
+    col1.header("Stonks")
+    # stock pie chart
+    with col1:
+        st.plotly_chart(get_portfolio_percentages()[0])
+
+    col2.header("Options")
+    # option pie chart
+    with col2:
+        st.plotly_chart(get_portfolio_percentages()[1])
+    
     # positions
-    st.write('Stocks')
-    st.table(get_current_positions('Positions'))
-    st.write('Options')
-    st.table(get_current_positions('Options'))
+    st.header('Stonks')
+    st.table(create_table(get_current_positions('Positions')))
+    # st.table(get_current_positions('Positions'))
+
+    st.header('Options')
+    st.table(create_table(get_current_positions('Options')))
+    # st.table(get_current_positions('Options'))
 
 
 if __name__ == '__main__':
