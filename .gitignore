@@ -1,6 +1,8 @@
 __pycache__/
 .venv/
+.vscode/
 .idea/
+settings.json
 chromedriver.exe
 config.py
 token

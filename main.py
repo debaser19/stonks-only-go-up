@@ -141,21 +141,25 @@ def main():
 
     st.set_page_config(layout="wide") 
     # sidebar
-    st.sidebar.header("Timeframe Selection")
+    st.sidebar.header("P/L Graph Timeframe")
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
-        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"]
+        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d", "45d", "60d"]
     )
 
-    st.sidebar.header("Ticker List")
-    symbol = st.sidebar.selectbox('Current Watchlist', watchlist)
-
     # Pattern Recognition
+    st.sidebar.header("Pattern Recognition")
+
+    # st.sidebar.header("Ticker List")
+    # symbol = st.sidebar.selectbox('Current Watchlist', watchlist)
+
+    symbol = st.sidebar.text_input("Enter a symbol", 'AAPL')
+
     pattern_timeframe = st.sidebar.select_slider(
         'Select Pattern Recognition Timeframe',
         options=range(1, 366)
     )
-    st.sidebar.header("Pattern Recognition")
+    
     st.sidebar.write(f"{symbol} Morning Star Candles")
     st.sidebar.dataframe(pattern_recognition.morning_star_candle(symbol, pattern_timeframe))
 
