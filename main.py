@@ -4,6 +4,7 @@ import pandas as pd
 import config
 import ast
 import plotly.graph_objects as go
+import pattern_recognition
 
 
 def connect_to_api():
@@ -133,15 +134,33 @@ def create_table(positions):
 
 
 def main():
+    watchlist = ['DKNG', 'NET', 'TSLA', 'GM', 'ABNB', 'GNOG', 'SPY', 'RKT', 'NVDA', 'SQ', 'FMAC',
+                 'IPOF', 'PLUG', 'AMD', 'AAPL', 'BB', 'TSM', 'WKHS', 'NIO', 'PLTR', 'GME', 'AMC',
+                 'TLRY', 'SNAP', 'ALLY', 'MSFT', 'ATVI', 'PENN', 'INTC', 'AMZN', 'COST', 'ARKK',
+                 'U', 'TWTR', 'ROKU', 'BAC', 'X', 'F']
+
     st.set_page_config(layout="wide") 
     # sidebar
     st.sidebar.header("Timeframe Selection")
     pos_slider = st.sidebar.select_slider(
         'Select a timeframe',
-        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"])
+        options=["1h", "2h", "3h", "6h", "12h", "24h", "7d", "30d"]
+    )
 
     st.sidebar.header("Ticker List")
-    st.sidebar.write(get_ticker_list())
+    symbol = st.sidebar.selectbox('Current Watchlist', watchlist)
+
+    # Pattern Recognition
+    pattern_timeframe = st.sidebar.select_slider(
+        'Select Pattern Recognition Timeframe',
+        options=range(1, 366)
+    )
+    st.sidebar.header("Pattern Recognition")
+    st.sidebar.write(f"{symbol} Morning Star Candles")
+    st.sidebar.dataframe(pattern_recognition.morning_star_candle(symbol, pattern_timeframe))
+
+    st.sidebar.write(f"{symbol} Engulfing Candles")
+    st.sidebar.dataframe(pattern_recognition.engulfing_candle(symbol, pattern_timeframe))
 
     # main section
     st.title("Tendies")
