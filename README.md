@@ -1,11 +1,16 @@
-# stonks-only-go-up
-A tool to keep a historical record of my tendies
+# STONKS
+This repo started out as a flask app to get a robinhood-esque P/L chart for my portfolio.
 
-## to do
-* need to fix chart axis updating
-* set up each position ticker as a link to show ticker's chart and any news (pull from yahoo api?)
-* need to preserve UI state when zooming / panning through interval refreshes
-* ~~set up influx db to log account balance on regular intervals~~
-* ~~implement a charting library to display balance history and portfolio diversity or whatever else~~
-* ~~add positions to chart / table~~
-* ~~time settings for graph~~
+It now has become a bit of a dashboard for keeping an eye on my positions as well as some other features as I think of them
+
+## main.py
+This is a dashboard app using Streamlit. Launch it with `streamlit run main.py`
+
+## dashboard.py
+This is a dashboard app using Dash. Launch it with `python3 dashboard.py`
+
+## To Do
+* `dashboard.py`
+* * Add pie charts into `dashboard.py`
+* * Add pattern recognition into `dashboard.py`
+* * Watchlist selection with modals

@@ -9,3 +9,5 @@ oauth2client
 plotly
 TA-Lib
 yfinance
+dash
+dash-bootstrap-components
