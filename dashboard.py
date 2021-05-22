@@ -13,69 +13,44 @@ import time
 import pytz
 import emoji
 from tda import auth, client
+import yfinance
+import ast
 import config
-
-
-api_key = config.api_key
-token_path = config.token_path
-redirect_uri = config.redirect_uri
 
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-current_balance = 0
 
-# Layout Stuff
-def createBalanceTable():
+
+def create_balance_table():
     return dash_table.DataTable(
         id = 'balance_table',
         columns = [
-            {'name': 'Net Liquidity', 'id': 'net_liq'},
-            {'name': 'Cash', 'id': 'cash'},
-            {'name': 'Buying Power', 'id': 'buying_power'},
-            {'name': 'Margin Balance', 'id': 'margin_balance'}
+            {'name': 'NetLiquidity', 'id': 'NetLiq'},
+            {'name': 'Cash', 'id': 'Cash'},
+            {'name': 'Buying Power', 'id': 'BuyingPower'},
+            {'name': 'Margin Balance', 'id': 'MarginBalance'}
         ],
-        style_header = {'background': '#333'},
-        style_cell = {'background': '#444'}
+        style_header = {'background': 'rgb(14, 17, 23)'},
+        style_cell = {'background': 'rgb(30, 33, 39)'}
     )
 
 
-def createRadioButtons():
-    return dcc.RadioItems(
-        options = [
-            {'label': '1D', 'value': '1d'},
-            {'label': '7D', 'value': '7d'},
-            {'label': '30D', 'value': '30d'},
-            {'label': '3M', 'value': '90d'},
-            {'label': '6M', 'value': '180d'},
-            {'label': '1Y', 'value': '365d'}
-        ],
-        id = 'timeframe',
-        value = '1d'
-    )
-    
-
-def createTickerList():
-    return html.Div([
-        html.H3('Trading tickers')
-    ])
-
-
-def createGraph():
+def create_pl_graph():
     return dcc.Graph(
         id='graph', 
         animate=False,
         figure = {
             'layout': go.Layout(
-                paper_bgcolor = '#333',
-                plot_bgcolor = '#333',
+                paper_bgcolor = 'rgb(14, 17, 23)',
+                plot_bgcolor = 'rgb(14, 17, 23)',
                 font = {'color': 'white'}
             )
         }
     )
 
 
-def createStonksTable():
+def create_stonks_table():
     # TODO: Need to dymanically pull in headers for tables
     return dash_table.DataTable(
         id = 'stocks_table',
@@ -97,14 +72,14 @@ def createStonksTable():
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'color': 'skyblue'
+                'color': 'lightgreen '
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'color': 'orangered'
+                'color': 'red'
             },
             {
                 'if': { # positive p/l open
@@ -112,22 +87,22 @@ def createStonksTable():
                     'column_id': ['pl_open']
 
                 },
-                'color': 'skyblue'
+                'color': 'lightgreen '
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'color': 'orangered'
+                'color': 'red'
             }
         ],
-        style_header = {'background': '#333'},
-        style_cell = {'background': '#444'}
+        style_header = {'background': 'rgb(14, 17, 23)'},
+        style_cell = {'background': 'rgb(30, 33, 39)'}
     )
 
 
-def createOptionsTable():
+def create_options_table():
     return dash_table.DataTable(
         id = 'options_table',
         columns = [
@@ -149,14 +124,14 @@ def createOptionsTable():
                     'column_id': ['pl_day', 'pl_day_percent']
 
                 },
-                'color': 'skyblue'
+                'color': 'lightgreen '
             },
             {
                 'if': { # negative p/l day
                     'filter_query': '{pl_day} < 0',
                     'column_id': ['pl_day', 'pl_day_percent']
                 },
-                'color': 'orangered'
+                'color': 'red'
             },
             {
                 'if': { # positive p/l open
@@ -164,54 +139,22 @@ def createOptionsTable():
                     'column_id': ['pl_open']
 
                 },
-                'color': 'skyblue'
+                'color': 'lightgreen '
             },
             {
                 'if': { # negative p/l open
                     'filter_query': '{pl_open} < 0',
                     'column_id': ['pl_open']
                 },
-                'color': 'orangered'
+                'color': 'red'
             }
         ],
-        style_header = {'background': '#333'},
-        style_cell = {'background': '#444'}
+        style_header = {'background': 'rgb(14, 17, 23)'},
+        style_cell = {'background': 'rgb(30, 33, 39)'}
     )
 
 
-app.layout = html.Div([
-    dbc.Row(
-        dbc.Col(html.Div(createBalanceTable()), width = {'size': 6, 'offset': 3})
-    ),
-    dbc.Row(
-        dbc.Col(html.Div(createGraph()), width = {'size': 10, 'offset': 1})
-    ),
-    dbc.Row(
-        dbc.Col(html.Div(createRadioButtons()), width = {'size': 3, 'offset': 5})
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.H1('Positions'),
-            html.H3('Stocks'),
-            createStonksTable()
-        ]), width = {'size': 10, 'offset': 1})
-    ),
-    dbc.Row(
-        dbc.Col(html.Div([
-            html.H3('Options'),
-            createOptionsTable()
-        ]), width = {'size': 10, 'offset': 1})
-    ),
-    dcc.Interval(
-        id = 'my-interval',
-        interval = 10 * 1000,
-        n_intervals = 0
-    )
-])
-
-
-# CALLBACKS
-
+# Callbacks
 # Update graph on interval
 # TODO: Need to figure out how to preserve ui state on updates when user has panned or zoomed
 @app.callback(
@@ -219,52 +162,46 @@ app.layout = html.Div([
     [Input('my-interval', 'n_intervals'),
     Input('timeframe', 'value')]
 )
-def updateGraph(num, timeframe):
+def update_graph(num, timeframe):
     # connect to influx and import to df
-    if timeframe == '1d':
-        time_interval = '30s'
-    elif timeframe == '7d':
-        time_interval = '5m'
-    elif timeframe == '30d':
-        time_interval = '1h'
-    elif timeframe == '90d':
-        time_interval = '2h'
-    elif timeframe == '180d':
-        time_interval = '4h'
-    elif timeframe == '365d':
-        time_interval = '8h'
-    else:
-        time_interval = '168h'
+    tz_offset = 4
 
     client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
-    query = f'select time, mean(value) as value from balance where time > now() - {timeframe} GROUP BY time({time_interval})'
+    query = f'select time, NetLiq from balance where time > now() - {tz_offset}h - {timeframe}h'
     results = client.query(query)
+    df = pd.DataFrame(results['balance'])
+    df['NetLiq'] = pd.to_numeric(df['NetLiq'], downcast='float')
+    df['Date'] = df.index
 
-    try:
-        df = results['balance']
-    except KeyError as e:
-        print(f'KeyError: {e}')
-        print(f'Unable to pull balance as no plot points in range, falling back to 7d')
-        query = f'select time, mean(value) as value from balance where time > now() - 7d GROUP BY time(5m)'
-        results = client.query(query)
-        df = results['balance']
-        
-    df['timestamp'] = df.index
+    # check if red or green
+    if df.NetLiq.iloc[0] < df.NetLiq.iloc[-1]:
+        line_color = 'lightgreen'
+    elif df.NetLiq.iloc[0] > df.NetLiq.iloc[-1]:
+        line_color = 'red'
+    else:
+        line_color = 'yellow'
 
     data =[
         go.Scatter(
-            y = df.value,
-            x = df.timestamp.tz_convert('US/Eastern'),
+            y = df.NetLiq,
+            x = df.Date,
             mode = 'lines',
-            line = {'color': 'yellow'}
+            line = {'color': line_color}
         )
     ]
-
+    if timeframe <= 24:
+        title_time = f'{int(timeframe)} hour(s)'
+    elif timeframe >= 24 and timeframe < 720:
+        title_time = f'{int(timeframe / 24)} day(s)'
+    elif timeframe >= 720 and timeframe < 8760:
+        title_time = f'{int(timeframe / (24 * 30))} month(s)'
+    else:
+        title_time = f'{(int(timeframe / (24 * 365)))} year(s)'
     layout = go.Layout(
-        title = emoji.emojize(f'Portfolio performance over the past {timeframe}, grouped by {time_interval}', use_aliases=True),
+        title = emoji.emojize(f'Portfolio performance over the past {title_time}', use_aliases=True),
         uirevision = data,
-        paper_bgcolor = '#333',
-        plot_bgcolor = '#333',
+        paper_bgcolor = 'rgb(14, 17, 23)',
+        plot_bgcolor = 'rgb(14, 17, 23)',
         font = {'color': 'white'},
         hovermode = 'x'
     )
@@ -281,140 +218,132 @@ def updateGraph(num, timeframe):
 
     return fig
 
-
 # Update stock positions on interval
 @app.callback(
+    Output('balance_table', 'data'),
     Output('stocks_table', 'data'),
     Output('options_table', 'data'),
-    Output('balance_table', 'data'),
     [Input('my-interval', 'n_intervals')]
 )
-def updatePositions(num):
-    all_positions = getPositions()
-    stock_positions = all_positions[0]
-    options_positions = all_positions[1]
-    account_balance = all_positions[2]
-    stonks_df = pd.DataFrame(stock_positions)
-    options_df = pd.DataFrame(options_positions)
-    print('Updating Stonks table...')
-    print(stonks_df)
-    print('Updating Options table...')
-    print(options_df)
+def update_positions(num):
+    # get balances
+    client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
+    balance_query = 'select time, BuyingPower, Cash, MarginBalance, NetLiq from balance group by * order by time desc limit 1'
+    balance_results = client.query(balance_query)
+    account_balance = balance_results['balance']
+    account_balance = pd.DataFrame(account_balance).to_dict('records')
 
-    return stonks_df.to_dict('records'), options_df.to_dict('records'), [account_balance]
-
-
-# API Connection
-def connectToApi():
-    # generate token
-    try:
-        c = auth.client_from_token_file(token_path, api_key)
-        return c
-    except FileNotFoundError:
-        from selenium import webdriver
-        with webdriver.Chrome() as driver:
-            c = auth.client_from_login_flow(
-                driver, api_key, redirect_uri, token_path)
-            return c
-
-
-def getAccountInfo():
-    c = connectToApi()
-    r = c.get_account(config.account_number, fields=c.Account.Fields.POSITIONS)
-    account_info = r.json()
-    print('Refreshing account info...')
-
-    return account_info
-
-
-def getPositions():
-    account_info = getAccountInfo()
-    stock_positions = []
-    option_positions = []
-    positions_list = account_info['securitiesAccount']['positions']
+    # get positions
+    positions_query = f'select time, Positions from balance group by * order by time desc limit 1'
+    position_results = client.query(positions_query)
     
-    for position in positions_list:
+    positions = position_results['balance'].iloc[0]['Positions']
 
-        long_quantity = position['longQuantity']
-        short_quantity = position['shortQuantity']
-        quantity = long_quantity - short_quantity
-        trade_price = position['averagePrice']
-        current_price = abs(position['marketValue']) / abs(long_quantity - short_quantity)
-        pl_day = position['currentDayProfitLoss']
-        pl_day_percent = position['currentDayProfitLossPercentage']
-        ticker = position['instrument']['symbol']
-
-
-        if quantity > 0:
-            # long position
-            pl_open = ((current_price - trade_price) * abs(quantity))
-        else:
-            # short position
-            pl_open = ((trade_price - current_price) * abs(quantity))
-
-        # check the asset type
-        if position['instrument']['assetType'] == 'EQUITY': # asset type is shares
-
-            stock_position_dict = {
-                'asset_type': position['instrument']['assetType'],
-                'ticker': ticker,
-                'quantity': quantity,
-                'trade_price': f'{trade_price:.2f}',
-                'current_price': f'{current_price:.2f}',
-                'pos_net_liq': f'{position["marketValue"]:.2f}',
-                'pl_day': f'{pl_day:.2f}',
-                'pl_day_percent': f'{pl_day_percent:.2f}',
-                'pl_open': f'{pl_open:.2f}'
-            }
-
-            stock_positions.append(stock_position_dict)
-
-
-        # asset type is an option, determine if call/put
-        if position['instrument']['assetType'] == 'OPTION':
-            if quantity > 0:
-                # long position
-                pl_open = (((current_price) / 100 - trade_price) * abs(quantity)) * 100
-            else:
-                # short position
-                pl_open = ((trade_price - (current_price) / 100) * abs(quantity)) * 100
-
-            option_position_dict = {
-                'asset_type': position['instrument']['putCall'],
-                'ticker': position['instrument']['symbol'],
-                'description': position['instrument']['description'],
-                'quantity': quantity,
-                'trade_price': f'{trade_price:.2f}',
-                'current_price': f'{current_price / 100:.2f}',
-                'pos_net_liq': f'{position["marketValue"]:.2f}',
-                'pl_day': f'{pl_day:.2f}',
-                'pl_day_percent': f'{pl_day_percent:.2f}',
-                'pl_open': f'{pl_open:.2f}'
-            }
-
-            option_positions.append(option_position_dict)
-
-    list_of_tickers = []
-    for stock_ticker in stock_positions:
-        if stock_ticker['ticker'] not in list_of_tickers:
-            list_of_tickers.append(stock_ticker['ticker'])
+    # get options
+    options_query = f'select time, Options from balance group by * order by time desc limit 1'
+    option_results = client.query(options_query)
     
-    for option_ticker in option_positions:
-        t = option_ticker['ticker'].split('_')[0]
-        if t not in list_of_tickers:
-            list_of_tickers.append(t)
+    options = option_results['balance'].iloc[0]['Options']
 
-    
-    print(f'List of tickers: {list_of_tickers}')
+    return account_balance, ast.literal_eval(positions), ast.literal_eval(options)
 
-    balance_dict = {
-        'net_liq': f"{account_info['securitiesAccount']['currentBalances']['liquidationValue']:,}",
-        'cash': f"{account_info['securitiesAccount']['currentBalances']['availableFunds']:,}",
-        'buying_power': f"{account_info['securitiesAccount']['currentBalances']['buyingPower']:,}",
-        'margin_balance': f"{account_info['securitiesAccount']['currentBalances']['marginBalance']:,}"
-    }
-    
-    return stock_positions, option_positions, balance_dict, list_of_tickers
+
+# Layout
+app.layout = html.Div([
+    dbc.Row(
+        dbc.Col(html.Div(create_balance_table()), width = {'size': 6, 'offset': 3})
+    ),
+    dcc.Tabs(
+        id="dash-tabs",
+        parent_className='custom-tabs',
+        className='custom-tabs-container',
+        children=[
+        dcc.Tab(
+            label='P/L Graph',
+            className='pl-graph-tab dash-tab',
+            selected_className='pl-graph-tab--selected dash-tab--selected',
+            children=[
+            dbc.Row(
+                dbc.Col(html.Div(create_pl_graph()), width = {'size': 10, 'offset': 1})
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dcc.Slider(
+                        min=1,
+                        max=8760,
+                        step=None,
+                        marks={
+                            1: '1H',
+                            2: '2H',
+                            3: '3H',
+                            6: '6H',
+                            12: '12H',
+                            24: '1D',
+                            168: '1W',
+                            720: '1M',
+                            1440: '2M',
+                            2160: '3M',
+                            4320: '6M',
+                            8760: '1Y'
+                        },
+                        value=24,
+                        id='timeframe'
+                    )
+                )
+            )
+        ]),
+        dcc.Tab(
+            label='Positions',
+            className='positions-tab dash-tab',
+            selected_className='positions-tab--selected dash-tab--selected',
+            children=[
+            dbc.Row(
+                dbc.Col(html.Div([
+                    html.H1('Positions'),
+                    html.H3('Stocks'),
+                    create_stonks_table()
+                ]), width = {'size': 10, 'offset': 1})
+            ),
+            dbc.Row(
+                dbc.Col(html.Div([
+                    html.H3('Options'),
+                    create_options_table()
+                ]), width = {'size': 10, 'offset': 1})
+            )
+        ]),
+        dcc.Tab(
+            label='Pie Charts',
+            className='pie-charts-tab dash-tab',
+            selected_className='pie-charts-tab--selected dash-tab--selected',
+            children=[
+                dbc.Row(
+                    dbc.Col(html.Div([
+                        html.H1('Pie Charts!')
+                        ]), width={'size': 10, 'offset': 1}
+                    )
+                )
+            ]
+        ),
+        dcc.Tab(
+            label='Pattern Recognition',
+            className='pattern-recognition-tab dash-tab',
+            selected_className='pattern-recognition-tab--selected dash-tab--selected',
+            children=[
+                dbc.Row(
+                    dbc.Col(html.Div([
+                        html.H1('CANDLES!!')
+                        ]), width={'size': 10, 'offset': 1}
+                    )
+                )
+            ]
+        )
+    ]),
+    dcc.Interval(
+        id = 'my-interval',
+        interval = 10 * 1000,
+        n_intervals = 0
+    )
+])
 
 
 if __name__ == '__main__':
