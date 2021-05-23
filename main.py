@@ -5,6 +5,9 @@ import config
 import ast
 import plotly.graph_objects as go
 import pattern_recognition
+import positions
+import datetime
+import yfinance as yf
 
 
 def connect_to_api():
@@ -31,55 +34,6 @@ def get_current_balances():
     results = client.query(query)
 
     return results['balance']
-
-
-def get_current_positions(position):
-    client = DataFrameClient(config.influx_host, 8086, config.influxdb_user, config.influxdb_pass, 'balance_history')
-    query = f'select time, {position} from balance group by * order by time desc limit 1'
-    results = client.query(query)
-    
-    positions = results['balance'].iloc[0][position]
-
-    # need to return the string representation of a list as a list
-    return ast.literal_eval(positions)
-
-
-def get_ticker_list():
-    option_positions = get_current_positions('Options')
-    option_tickers = [t['ticker'].split('_')[0] for t in option_positions]
-
-    stock_positions = get_current_positions('Positions')
-    stock_tickers = [t['ticker'] for t in stock_positions]
-
-    return list(set(option_tickers) | set(stock_tickers))
-    
-
-def get_portfolio_percentages():
-    option_positions = get_current_positions('Options')
-    option_tickers = [t['description'] for t in option_positions]
-    option_value = [t['pos_net_liq'] for t in option_positions]
-
-    option_data = [
-        go.Pie(
-            labels=option_tickers,
-            values=option_value,
-            textinfo='label+percent'
-        )
-    ]
-
-    stock_positions = get_current_positions('Positions')
-    stock_tickers = [t['ticker'] for t in stock_positions]
-    stock_value = [v['pos_net_liq'] for v in stock_positions]
-    
-    stock_data = [
-        go.Pie(
-            labels=stock_tickers,
-            values=stock_value,
-            textinfo='label+percent'
-        )
-    ]
-
-    return go.Figure(stock_data), go.Figure(option_data)
 
 
 def create_graph(pos_slider):
@@ -133,6 +87,48 @@ def create_table(positions):
     return pos_df
 
 
+def get_ohlc_data(symbol, timeframe):
+    today = datetime.datetime.today()
+    days = datetime.timedelta(timeframe)
+
+    start_date = (today - days).strftime('%Y-%m-%d')
+    end_date = today.strftime('%Y-%m-%d')
+
+    return yf.download(symbol, start=start_date, end=end_date)
+
+
+def create_candle_chart(symbol, timeframe):
+    ohlc = get_ohlc_data(symbol, timeframe)
+
+    fig = go.Figure(
+        data=[
+            go.Candlestick(
+                x=ohlc.index,
+                open=ohlc['Open'],
+                high=ohlc['High'],
+                low=ohlc['Low'],
+                close=ohlc['Close']
+            )
+        ])
+
+    layout = go.Layout(
+        paper_bgcolor='rgb(14, 17, 23)',
+        plot_bgcolor='rgb(14, 17, 23)',
+        font={'color': 'white'},
+        hovermode='x'
+    )
+    
+    fig.update_xaxes(
+        rangebreaks=[
+            dict(bounds=['sat', 'mon'])
+        ]
+    )
+
+    fig.update_layout(layout)
+    
+    return fig.update_layout(xaxis_rangeslider_visible=False)
+
+
 def main():
     watchlist = ['DKNG', 'NET', 'TSLA', 'GM', 'ABNB', 'GNOG', 'SPY', 'RKT', 'NVDA', 'SQ', 'FMAC',
                  'IPOF', 'PLUG', 'AMD', 'AAPL', 'BB', 'TSM', 'WKHS', 'NIO', 'PLTR', 'GME', 'AMC',
@@ -174,26 +170,31 @@ def main():
     # port graph
     st.plotly_chart(create_graph(pos_slider), use_container_width=True)
 
-    # set up cols
-    col1, col2 = st.beta_columns(2)
+    # chart for sidebar stock
+    with st.beta_expander(f'{symbol} Chart'):
+        st.plotly_chart(create_candle_chart(symbol, pattern_timeframe), use_container_width=True)
 
-    col1.header("Stonks")
-    # stock pie chart
-    with col1:
-        st.plotly_chart(get_portfolio_percentages()[0])
+    with st.beta_expander('Portfolio Structure'):
+        # set up cols
+        col1, col2 = st.beta_columns(2)
 
-    col2.header("Options")
-    # option pie chart
-    with col2:
-        st.plotly_chart(get_portfolio_percentages()[1])
+        col1.header("Stonks")
+        # stock pie chart
+        with col1:
+            st.plotly_chart(positions.get_portfolio_percentages()[0])
+
+        col2.header("Options")
+        # option pie chart
+        with col2:
+            st.plotly_chart(positions.get_portfolio_percentages()[1])
     
     # positions
     st.header('Stonks')
-    st.table(create_table(get_current_positions('Positions')))
+    st.table(create_table(positions.get_current_positions('Positions')))
     # st.table(get_current_positions('Positions'))
 
     st.header('Options')
-    st.table(create_table(get_current_positions('Options')))
+    st.table(create_table(positions.get_current_positions('Options')))
     # st.table(get_current_positions('Options'))
 
 

@@ -1,4 +1,3 @@
-import plotly          
 import plotly.graph_objects as go
 import dash
 import dash_bootstrap_components as dbc
@@ -7,15 +6,13 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
 import pandas as pd
-from influxdb import InfluxDBClient, DataFrameClient
+from influxdb import DataFrameClient
 import config
-import time
-import pytz
 import emoji
-from tda import auth, client
 import yfinance
 import ast
 import config
+import positions
 
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
@@ -317,9 +314,9 @@ app.layout = html.Div([
             selected_className='pie-charts-tab--selected dash-tab--selected',
             children=[
                 dbc.Row(
-                    dbc.Col(html.Div([
-                        html.H1('Pie Charts!')
-                        ]), width={'size': 10, 'offset': 1}
+                    dbc.Col(html.Div(
+                        positions.get_portfolio_percentages()[1]
+                        ), width={'size': 10, 'offset': 1}
                     )
                 )
             ]
