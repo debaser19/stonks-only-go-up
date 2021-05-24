@@ -1,6 +1,8 @@
 import ast
 import plotly.graph_objects as go
 from influxdb import DataFrameClient
+import streamlit as st
+import pandas as pd
 import config
 
 
@@ -51,3 +53,37 @@ def get_ticker_list():
     stock_tickers = [t['ticker'] for t in stock_positions]
 
     return list(set(option_tickers) | set(stock_tickers))
+
+
+def create_table(positions):
+    pos_df = pd.DataFrame(positions)
+    pos_df.set_index('ticker', inplace=True)
+    pos_df.index.name = 'Ticker'
+
+    return pos_df
+
+
+def display_positions():
+    with st.beta_expander('Positions', True):
+    # positions
+        st.header('Stonks')
+        st.table(create_table(get_current_positions('Positions')))
+        # st.table(get_current_positions('Positions'))
+
+        st.header('Options')
+        st.table(create_table(get_current_positions('Options')))
+        # st.table(get_current_positions('Options'))
+
+    with st.beta_expander('Portfolio Structure', True):
+        # set up cols
+        col1, col2 = st.beta_columns(2)
+
+        col1.header("Stonks")
+        # stock pie chart
+        with col1:
+            st.plotly_chart(get_portfolio_percentages()[0])
+
+        col2.header("Options")
+        # option pie chart
+        with col2:
+            st.plotly_chart(get_portfolio_percentages()[1])
