@@ -12,5 +12,3 @@ yfinance
 dash
 dash-bootstrap-components
 BeautifulSoup4
-vaderSentiment
-nltk

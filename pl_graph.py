@@ -63,7 +63,7 @@ def create_graph(pos_slider):
         tickformat='%I:%M %p\n%x',
         rangebreaks=[
             dict(bounds=['sat', 'mon']),
-            dict(bounds=[20, 4], pattern='hour')
+            dict(bounds=[16, 9], pattern='hour')
         ]
     )
 
